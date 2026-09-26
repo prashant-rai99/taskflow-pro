@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>TaskFlow Pro</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.13.5/cdn.min.js" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
     <link rel="stylesheet" href="/static/board.css">
 </head>
+
 <body x-data="board()" x-init="loadTasks()">
 
     <header>
@@ -14,7 +14,6 @@
         <button @click="showCreateForm = true">+ New Task</button>
     </header>
 
-    <!-- Simple create-task form (shown/hidden) -->
     <div x-show="showCreateForm" class="modal-backdrop" @click.self="showCreateForm = false">
         <div class="modal">
             <h3>New Task</h3>
@@ -35,7 +34,7 @@
         <template x-for="col in columns" :key="col.key">
             <div class="column">
                 <h2 x-text="col.label"></h2>
-                <div class="card-list" :data-column="col.key" x-ref="'list_' + col.key">
+                <div class="card-list" :data-column="col.key">
                     <template x-for="task in tasksByColumn(col.key)" :key="task.id">
                         <div class="card" :data-task-id="task.id" :class="'status-' + task.status">
                             <div class="card-title" x-text="task.title"></div>
@@ -51,6 +50,9 @@
         </template>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
     <script src="/static/board.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.13.5/cdn.min.js"></script>
 </body>
+
 </html>

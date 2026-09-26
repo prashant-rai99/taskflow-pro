@@ -15,42 +15,49 @@ router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 
 
 def _build_graph(db: Session):
-    """adjacency = { task_id: [prerequisite_id, ...] } from the dependencies table."""
     graph = {}
     for dep in db.query(Dependency).all():
         graph.setdefault(dep.task_id, []).append(dep.prerequisite_id)
     return graph
 
 
-def _attach_computed_fields(tasks: list[Task], db: Session) -> list[TaskOut]:
-    """Given raw Task rows, attach live-computed schedule + status."""
+def _compute_all(db: Session) -> dict[int, TaskOut]:
+    """
+    Fetch ALL tasks and compute schedule + status over the FULL graph.
+    This must always run on the complete task set -- the schedule and
+    status engines need every task's dependencies present, not just
+    the one being created/updated, otherwise the topological sort
+    breaks (missing nodes it expects to see).
+
+    Returns a dict keyed by task_id for easy lookup.
+    """
+    all_tasks = db.query(Task).all()
     graph = _build_graph(db)
 
     schedule_input = {
         t.id: {"planned_start": t.planned_start, "duration_days": t.duration_days}
-        for t in tasks
+        for t in all_tasks
     }
     schedule_result = compute_schedule(schedule_input, graph)
 
-    columns = {t.id: t.column for t in tasks}
+    columns = {t.id: t.column for t in all_tasks}
     status_result = compute_status(columns, graph)
 
-    output = []
-    for t in tasks:
+    output = {}
+    for t in all_tasks:
         task_out = TaskOut.model_validate(t)
         task_out.computed_start = schedule_result[t.id]["start"]
         task_out.computed_end = schedule_result[t.id]["end"]
         task_out.status = status_result[t.id]
-        output.append(task_out)
+        output[t.id] = task_out
     return output
 
 
 @router.get("", response_model=list[TaskOut])
 def list_tasks(db: Session = Depends(get_db)):
+    computed = _compute_all(db)
     tasks = db.query(Task).order_by(Task.column, Task.position).all()
-    if not tasks:
-        return []
-    return _attach_computed_fields(tasks, db)
+    return [computed[t.id] for t in tasks]
 
 
 @router.post("", response_model=TaskOut, status_code=201)
@@ -59,7 +66,9 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db)):
     db.add(task)
     db.commit()
     db.refresh(task)
-    return _attach_computed_fields([task], db)[0]
+
+    computed = _compute_all(db)
+    return computed[task.id]
 
 
 @router.patch("/{task_id}", response_model=TaskOut)
@@ -75,7 +84,9 @@ def update_task(task_id: int, payload: TaskUpdate, db: Session = Depends(get_db)
 
     db.commit()
     db.refresh(task)
-    return _attach_computed_fields([task], db)[0]
+
+    computed = _compute_all(db)
+    return computed[task_id]
 
 
 @router.delete("/{task_id}", status_code=204)
