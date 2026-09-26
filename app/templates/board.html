@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TaskFlow Pro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.13.5/cdn.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+    <link rel="stylesheet" href="/static/board.css">
+</head>
+<body x-data="board()" x-init="loadTasks()">
+
+    <header>
+        <h1>TaskFlow Pro</h1>
+        <button @click="showCreateForm = true">+ New Task</button>
+    </header>
+
+    <!-- Simple create-task form (shown/hidden) -->
+    <div x-show="showCreateForm" class="modal-backdrop" @click.self="showCreateForm = false">
+        <div class="modal">
+            <h3>New Task</h3>
+            <input type="text" x-model="newTask.title" placeholder="Task title">
+            <textarea x-model="newTask.description" placeholder="Description"></textarea>
+            <label>Planned Start</label>
+            <input type="date" x-model="newTask.planned_start">
+            <label>Duration (days)</label>
+            <input type="number" x-model.number="newTask.duration_days" min="1">
+            <div class="modal-actions">
+                <button @click="showCreateForm = false">Cancel</button>
+                <button @click="createTask()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="board">
+        <template x-for="col in columns" :key="col.key">
+            <div class="column">
+                <h2 x-text="col.label"></h2>
+                <div class="card-list" :data-column="col.key" x-ref="'list_' + col.key">
+                    <template x-for="task in tasksByColumn(col.key)" :key="task.id">
+                        <div class="card" :data-task-id="task.id" :class="'status-' + task.status">
+                            <div class="card-title" x-text="task.title"></div>
+                            <div class="card-status" x-text="task.status"></div>
+                            <div class="card-dates">
+                                <span x-text="task.computed_start"></span> →
+                                <span x-text="task.computed_end"></span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <script src="/static/board.js"></script>
+</body>
+</html>
