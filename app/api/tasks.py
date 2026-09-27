@@ -71,6 +71,67 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db)):
     return computed[task.id]
 
 
+@router.get("/{task_id}/explain-status")
+def explain_status(task_id: int, db: Session = Depends(get_db)):
+    """
+    Deterministic explanation of why a task is Blocked or Ready --
+    NOT AI-generated. Walks the dependency graph and reports exactly
+    which prerequisites (direct or transitive) are not yet Done.
+    """
+    task = db.query(Task).filter(Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    all_tasks = db.query(Task).all()
+    task_by_id = {t.id: t for t in all_tasks}
+    graph = _build_graph(db)
+
+    def is_effectively_done(tid, memo={}):
+        if tid in memo:
+            return memo[tid]
+        t = task_by_id.get(tid)
+        if t is None or t.column != "done":
+            memo[tid] = False
+            return False
+        for prereq_id in graph.get(tid, []):
+            if not is_effectively_done(prereq_id, memo):
+                memo[tid] = False
+                return False
+        memo[tid] = True
+        return True
+
+    blocking_reasons = []
+    for prereq_id in graph.get(task_id, []):
+        if not is_effectively_done(prereq_id):
+            prereq_task = task_by_id.get(prereq_id)
+            blocking_reasons.append(
+                {
+                    "prerequisite_id": prereq_id,
+                    "prerequisite_title": (
+                        prereq_task.title if prereq_task else "(unknown)"
+                    ),
+                    "current_column": (
+                        prereq_task.column if prereq_task else "(unknown)"
+                    ),
+                }
+            )
+
+    is_blocked = len(blocking_reasons) > 0
+
+    return {
+        "task_id": task_id,
+        "task_title": task.title,
+        "is_blocked": is_blocked,
+        "blocking_reasons": blocking_reasons,
+        "explanation": (
+            f"This task is blocked because {len(blocking_reasons)} prerequisite(s) "
+            f"are not yet Done."
+            if is_blocked
+            else "This task is ready -- all prerequisites are Done (or it has none)."
+        ),
+    }
+
+
 @router.patch("/{task_id}", response_model=TaskOut)
 def update_task(task_id: int, payload: TaskUpdate, db: Session = Depends(get_db)):
     task = db.query(Task).filter(Task.id == task_id).first()
