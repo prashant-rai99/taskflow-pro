@@ -35,3 +35,119 @@ header button {
 }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 .modal-actions button { padding: 6px 14px; border-radius: 4px; border: none; cursor: pointer; }
+
+
+.header-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.header-actions button {
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.modal.wide {
+    width: 420px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.loading-text {
+    color: #666;
+    font-style: italic;
+    margin: 10px 0;
+}
+
+.empty-text {
+    color: #888;
+    margin: 10px 0;
+}
+
+.card-status-row {
+    cursor: pointer;
+}
+
+.card-actions {
+    margin-top: 8px;
+}
+
+.card-btn {
+    font-size: 11px;
+    background: #eef2ff;
+    color: #4338ca;
+    border: 1px solid #c7d2fe;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.card-btn:hover {
+    background: #e0e7ff;
+}
+
+.suggestion-card {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.suggestion-reason {
+    font-size: 13px;
+    color: #333;
+    margin: 4px 0;
+}
+
+.suggestion-evidence {
+    font-size: 12px;
+    color: #666;
+    font-style: italic;
+    margin: 4px 0;
+}
+
+.suggestion-confidence {
+    font-size: 12px;
+    color: #16a34a;
+    font-weight: 600;
+    margin: 4px 0;
+}
+
+.suggestion-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.btn-approve {
+    background: #16a34a;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-reject {
+    background: #dc2626;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.blocking-list {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.blocking-list li {
+    margin-bottom: 6px;
+    font-size: 14px;
+}

@@ -11,9 +11,13 @@
 
     <header>
         <h1>TaskFlow Pro</h1>
-        <button @click="showCreateForm = true">+ New Task</button>
+        <div class="header-actions">
+            <button @click="showBreakdownForm = true">✨ Generate from Feature</button>
+            <button @click="showCreateForm = true">+ New Task</button>
+        </div>
     </header>
 
+    <!-- Create Task Modal -->
     <div x-show="showCreateForm" class="modal-backdrop" @click.self="showCreateForm = false">
         <div class="modal">
             <h3>New Task</h3>
@@ -30,6 +34,70 @@
         </div>
     </div>
 
+    <!-- Breakdown Generator Modal -->
+    <div x-show="showBreakdownForm" class="modal-backdrop" @click.self="showBreakdownForm = false">
+        <div class="modal">
+            <h3>Generate Sub-tasks from Feature</h3>
+            <textarea x-model="breakdownDescription"
+                placeholder="Describe a feature, e.g. 'Add payment gateway integration with Stripe'"
+                rows="4"></textarea>
+            <label>Planned Start</label>
+            <input type="date" x-model="breakdownStartDate">
+            <div x-show="breakdownLoading" class="loading-text">Generating sub-tasks...</div>
+            <div class="modal-actions">
+                <button @click="showBreakdownForm = false">Cancel</button>
+                <button @click="submitBreakdown()" :disabled="breakdownLoading">Generate</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Suggestions Panel -->
+    <div x-show="showSuggestionsPanel" class="modal-backdrop" @click.self="showSuggestionsPanel = false">
+        <div class="modal wide">
+            <h3>AI Suggestions for "<span x-text="suggestionsForTaskTitle"></span>"</h3>
+            <div x-show="suggestionsLoading" class="loading-text">Asking AI for suggestions...</div>
+            <div x-show="!suggestionsLoading && currentSuggestions.length === 0" class="empty-text">
+                No confident suggestions found.
+            </div>
+            <template x-for="s in currentSuggestions" :key="s.id">
+                <div class="suggestion-card">
+                    <div><strong x-text="'Depends on: ' + s.prerequisite_title"></strong></div>
+                    <div class="suggestion-reason" x-text="s.reason"></div>
+                    <div class="suggestion-evidence">Evidence: "<span x-text="s.evidence"></span>"</div>
+                    <div class="suggestion-confidence" x-text="'Confidence: ' + s.confidence + '%'"></div>
+                    <div class="suggestion-actions">
+                        <button @click="rejectSuggestion(s.id)" class="btn-reject">Reject</button>
+                        <button @click="approveSuggestion(s.id)" class="btn-approve">Approve</button>
+                    </div>
+                </div>
+            </template>
+            <div class="modal-actions">
+                <button @click="showSuggestionsPanel = false">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Explain Blocked Panel -->
+    <div x-show="showExplainPanel" class="modal-backdrop" @click.self="showExplainPanel = false">
+        <div class="modal">
+            <h3 x-text="explainData.task_title + ' -- Status Explanation'"></h3>
+            <p x-text="explainData.explanation"></p>
+            <template x-if="explainData.blocking_reasons && explainData.blocking_reasons.length > 0">
+                <ul class="blocking-list">
+                    <template x-for="r in explainData.blocking_reasons" :key="r.prerequisite_id">
+                        <li>
+                            <strong x-text="r.prerequisite_title"></strong>
+                            is currently in <span x-text="r.current_column"></span>
+                        </li>
+                    </template>
+                </ul>
+            </template>
+            <div class="modal-actions">
+                <button @click="showExplainPanel = false">Close</button>
+            </div>
+        </div>
+    </div>
+
     <div class="board">
         <template x-for="col in columns" :key="col.key">
             <div class="column">
@@ -38,10 +106,15 @@
                     <template x-for="task in tasksByColumn(col.key)" :key="task.id">
                         <div class="card" :data-task-id="task.id" :class="'status-' + task.status">
                             <div class="card-title" x-text="task.title"></div>
-                            <div class="card-status" x-text="task.status"></div>
+                            <div class="card-status-row">
+                                <span class="card-status" x-text="task.status" @click="explainStatus(task.id)"></span>
+                            </div>
                             <div class="card-dates">
                                 <span x-text="task.computed_start"></span> →
                                 <span x-text="task.computed_end"></span>
+                            </div>
+                            <div class="card-actions">
+                                <button @click="suggestDependencies(task.id)" class="card-btn">🔗 Suggest</button>
                             </div>
                         </div>
                     </template>
