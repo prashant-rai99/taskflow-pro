@@ -13,9 +13,17 @@
         <h1>TaskFlow Pro</h1>
         <div class="header-actions">
             <button @click="showBreakdownForm = true">✨ Generate from Feature</button>
+            <button @click="showCriticalPath()">🎯 Critical Path</button>
             <button @click="showCreateForm = true">+ New Task</button>
         </div>
     </header>
+
+    <!-- Critical Path Banner -->
+    <div x-show="criticalPathData" class="critical-path-banner">
+        <span><strong>Critical Path:</strong> <span x-text="criticalPathSummary"></span>
+            (<span x-text="criticalPathData ? criticalPathData.total_duration_days : ''"></span> days)</span>
+        <button @click="criticalPathData = null" class="cp-close">×</button>
+    </div>
 
     <!-- Create Task Modal -->
     <div x-show="showCreateForm" class="modal-backdrop" @click.self="showCreateForm = false">
@@ -104,7 +112,8 @@
                 <h2 x-text="col.label"></h2>
                 <div class="card-list" :data-column="col.key">
                     <template x-for="task in tasksByColumn(col.key)" :key="task.id">
-                        <div class="card" :data-task-id="task.id" :class="'status-' + task.status">
+                        <div class="card" :data-task-id="task.id"
+                            :class="'status-' + task.status + (criticalPathTaskIds.includes(task.id) ? ' on-critical-path' : '')">
                             <div class="card-title" x-text="task.title"></div>
                             <div class="card-status-row">
                                 <span class="card-status" x-text="task.status" @click="explainStatus(task.id)"></span>
@@ -115,6 +124,7 @@
                             </div>
                             <div class="card-actions">
                                 <button @click="suggestDependencies(task.id)" class="card-btn">🔗 Suggest</button>
+                                <button @click="whatIfPreview(task.id)" class="card-btn">🔮 What-if</button>
                             </div>
                         </div>
                     </template>

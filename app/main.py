@@ -3,7 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from app.db import Base, engine
 from app import models  # noqa: F401
-from app.api import tasks, dependencies, suggestions, breakdown
+from app.api import tasks, dependencies, suggestions, breakdown, critical_path, whatif
 
 app = FastAPI(title="TaskFlow Pro")
 
@@ -13,6 +13,8 @@ app.include_router(tasks.router)
 app.include_router(dependencies.router)
 app.include_router(suggestions.router)
 app.include_router(breakdown.router)
+app.include_router(critical_path.router)
+app.include_router(whatif.router)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 

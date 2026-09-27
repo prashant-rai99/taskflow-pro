@@ -16,6 +16,10 @@ function board() {
         suggestionsForTaskTitle: "",
         suggestionsLoading: false,
 
+        criticalPathData: null,
+        criticalPathSummary: "",
+        criticalPathTaskIds: [],
+
         explainData: {},
 
         columns: [
@@ -141,6 +145,34 @@ function board() {
             const res = await fetch(`/api/tasks/${taskId}/explain-status`);
             this.explainData = await res.json();
             this.showExplainPanel = true;
+        },
+
+        async showCriticalPath() {
+            const res = await fetch("/api/critical-path");
+            this.criticalPathData = await res.json();
+            this.criticalPathTaskIds = this.criticalPathData.path.map(p => p.id);
+            this.criticalPathSummary = this.criticalPathData.path.map(p => p.title).join(" → ");
+        },
+
+        async whatIfPreview(taskId) {
+            const newDuration = prompt("Enter hypothetical new duration (days):");
+            if (!newDuration || isNaN(newDuration)) return;
+            const res = await fetch("/api/what-if", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ task_id: taskId, new_duration_days: parseInt(newDuration) }),
+            });
+            if (res.ok) {
+                const result = await res.json();
+                if (result.changes.length === 0) {
+                    alert("No downstream impact -- nothing else would shift.");
+                } else {
+                    const lines = result.changes.map(c => `${c.title}: shifts by ${c.shift_days} day(s) (new end: ${c.new_end})`);
+                    alert(`Project end: ${result.project_end_before} → ${result.project_end_after}\n\n` + lines.join("\n"));
+                }
+            } else {
+                alert("What-if preview failed.");
+            }
         },
 
         initSortable() {
