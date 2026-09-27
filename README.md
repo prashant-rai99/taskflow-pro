@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/badge/SQLAlchemy-ORM-D71F00?style=flat-square&logo=sqlite&logoColor=white" alt="SQLAlchemy">
   <img src="https://img.shields.io/badge/LLM-Groq%20%7C%20openai--gpt--oss--120b-F55036?style=flat-square" alt="Groq">
   <img src="https://img.shields.io/badge/Testing-pytest%20%2B%20Hypothesis-0A9EDC?style=flat-square&logo=pytest&logoColor=white" alt="Testing">
-  <img src="https://img.shields.io/badge/Tests-46%20passing-brightgreen?style=flat-square" alt="Tests passing">
+  <img src="https://img.shields.io/badge/Tests-40%20passing-brightgreen?style=flat-square" alt="Tests passing">
 </p>
 
 ---
@@ -23,6 +23,7 @@
 - [The Dependency Engine](#-the-dependency-engine)
 - [AI / LLM Component](#-ai--llm-component)
 - [Evaluation Results](#-evaluation-results)
+- [Critical Path & What-if Preview](#-critical-path--what-if-preview)
 - [Tech Stack](#-tech-stack)
 - [Project Structure](#-project-structure)
 - [Setup & Installation](#-setup--installation)
@@ -30,6 +31,7 @@
 - [Testing](#-testing)
 - [Known Assumptions & Limitations](#-known-assumptions--limitations)
 - [Author](#-author)
+- [AI-Tool Assistance Disclosure](#-ai-tool-assistance-disclosure)
 
 ---
 
@@ -56,7 +58,7 @@ TaskFlow Pro is a **4-column Kanban board** (`Backlog → In Progress → Review
 | **Rollback on Regression** — cascades through all levels | ✅ | `app/engine/status.py` (recursive "effectively done" check) |
 | Persistence across refresh | ✅ | SQLite via SQLAlchemy |
 | Mandatory AI/LLM component (grounded, human-validated) | ✅ | `app/ai/` (see [AI / LLM Component](#-ai--llm-component)) |
-| Critical Path / What-if (bonus) | ⚠️ Not implemented — see [Limitations](#-known-assumptions--limitations) |
+| Critical Path / What-if (bonus) | ✅ | `app/engine/critical_path.py`, `app/api/critical_path.py`, `app/api/whatif.py` |
 
 ---
 
@@ -201,6 +203,15 @@ A second **hallucination stress-test** (`eval/hallucination_test.py`) gave the m
 Full per-item breakdowns: [`eval/results_grounded.md`](eval/results_grounded.md), [`eval/results_baseline.md`](eval/results_baseline.md).
 
 ---
+## 🎯 Critical Path & What-if Preview
+
+Both bonus features reuse `schedule.py`'s existing derived-schedule computation — no separate scheduling logic was written.
+
+**Critical Path** (`GET /api/critical-path`): walks backward from whichever task ends latest, at each step picking the prerequisite whose end date actually constrained that task's start — surfacing the longest chain that determines the overall project end date. On a diamond (`A → B, A → C, B → D, C → D`), it correctly follows whichever branch (`B` or `C`) is *longer*, not just the first one found.
+
+**What-if Preview** (`POST /api/what-if`): given a hypothetical duration/start-date change for one task, recomputes the full schedule **in-memory only** (nothing is written to the database) and reports which downstream tasks would shift and by how much. If the changed task isn't on the critical path, the preview correctly shows the overall project end date staying the same — only non-critical tasks shift.
+
+---
 
 ## 🛠 Tech Stack
 
@@ -224,7 +235,8 @@ taskflow-pro/
 │   │   ├── tasks.py / dependencies.py
 │   │   ├── suggestions.py / breakdown.py
 │   ├── engine/               # Pure-Python dependency engine
-│   │   ├── cycle.py / schedule.py / status.py
+│   │   ├── cycle.py / schedule.py / status.py / critical_path.py
+│   │   ├── critical_path.py / whatif.py (API layer)
 │   ├── templates/board.html  # Jinja2 board UI
 │   ├── static/board.js|css
 │   ├── models.py             # SQLAlchemy models
@@ -281,6 +293,8 @@ Open **http://127.0.0.1:8000/** for the board, or **http://127.0.0.1:8000/docs**
 | `POST` | `/api/tasks/suggestions/{id}/approve` | Human-approve → creates real dependency |
 | `POST` | `/api/tasks/suggestions/{id}/reject` | Human-reject a suggestion |
 | `POST` | `/api/breakdown` | Generate sub-tasks + dependencies from a feature description |
+| `GET` | `/api/critical-path` | Longest dependency chain by total duration (bonus) |
+| `POST` | `/api/what-if` | Preview a hypothetical duration/start change without saving it (bonus) |
 
 Full interactive schema at `/docs` (Swagger UI).
 
@@ -292,11 +306,12 @@ Full interactive schema at `/docs` (Swagger UI).
 pytest -v
 ```
 
-**46 tests**, covering:
-- 21 unit tests across the three engine modules (cycle/schedule/status)
+**40 tests**, covering:
+- 25 unit tests across the four engine modules (cycle/schedule/status/critical_path)
 - 6 Hypothesis property-based tests (500 randomized cases each for cycle detection, 300 each for scheduling/status invariants)
 - 8 tests for the AI response parser (hallucination filtering, malformed JSON handling)
 - Full suite runs in under 10 seconds — no network calls, no database required for the engine tests.
+- `pytest.ini` scopes collection to `tests/` only, so the standalone `eval/` scripts (which make live API calls and need `GROQ_API_KEY` at runtime) are never picked up by `pytest`. They're run manually: `python eval/run_eval.py`, `python eval/hallucination_test.py`.
 
 ---
 
@@ -305,9 +320,13 @@ pytest -v
 - **Dependencies are finish-to-start** and durations are fixed calendar days (no working-hour/weekend calendars).
 - A prerequisite is considered "satisfied" only when it sits in the `Done` column — there's no partial-completion state.
 - **Single shared board, no user accounts** — this was an explicit scope decision for the sprint; there's no per-user auth or multi-board support.
-- **Critical Path view and What-if preview** (both listed as bonus/optional in the problem statement) were not implemented in the time available; the underlying `schedule.py` engine already computes everything needed to add a "longest chain" view on top without further engine changes.
 - The AI's `openai/gpt-oss-120b` model did not hallucinate in our stress-test, meaning the validation layer's protection isn't visibly exercised by this specific model — see [Evaluation Results](#-evaluation-results) for the reasoning on why the layer is still load-bearing.
 - Only Groq is wired up as a live provider; the fallback-to-Gemini/OpenAI chain described in the architecture is supported by `app/ai/base.py`'s abstraction but a second provider implementation wasn't completed due to time.
+
+---
+## 🤝 AI-Tool Assistance Disclosure
+
+Claude (Anthropic) was used as a coding assistant during development — for things like drafting boilerplate faster, discussing trade-offs between a few possible approaches (e.g. how to derive schedules without accumulating deltas, how to structure the cycle-check), and debugging error messages (Windows/OneDrive permission issues, SQLAlchemy `IntegrityError`, an outdated Starlette API signature). Every suggestion was reviewed, tested, and run locally before being kept — the architecture decisions, what to build in what order, and the final code in this repository are the author's own. Groq's `openai/gpt-oss-120b` (used via the Groq API) is a separate thing: it's the product's own runtime AI feature, disclosed above in the [AI / LLM Component](#-ai--llm-component) section, not a development tool.
 
 ---
 
