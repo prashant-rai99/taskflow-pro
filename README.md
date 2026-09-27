@@ -315,7 +315,7 @@ pytest -v
 
 ---
 
-## ⚠️ Known Assumptions & Limitations
+## Known Assumptions & Limitations
 
 - **Dependencies are finish-to-start** and durations are fixed calendar days (no working-hour/weekend calendars).
 - A prerequisite is considered "satisfied" only when it sits in the `Done` column — there's no partial-completion state.
