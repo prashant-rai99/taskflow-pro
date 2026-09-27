@@ -29,7 +29,7 @@
 - [Setup & Installation](#-setup--installation)
 - [API Reference](#-api-reference)
 - [Testing](#-testing)
-- [Known Assumptions & Limitations](#-known-assumptions--limitations)
+- [Known Assumptions & Limitations](#known-assumptions--limitations)
 - [AI-Tool Assistance Disclosure](#-ai-tool-assistance-disclosure)
 - [Author](#-author)
 
