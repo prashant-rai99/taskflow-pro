@@ -30,8 +30,8 @@
 - [API Reference](#-api-reference)
 - [Testing](#-testing)
 - [Known Assumptions & Limitations](#-known-assumptions--limitations)
-- [Author](#-author)
 - [AI-Tool Assistance Disclosure](#-ai-tool-assistance-disclosure)
+- [Author](#-author)
 
 ---
 
@@ -234,15 +234,15 @@ taskflow-pro/
 │   ├── api/                 # FastAPI routers
 │   │   ├── tasks.py / dependencies.py
 │   │   ├── suggestions.py / breakdown.py
+│   │   ├── critical_path.py / whatif.py
 │   ├── engine/               # Pure-Python dependency engine
 │   │   ├── cycle.py / schedule.py / status.py / critical_path.py
-│   │   ├── critical_path.py / whatif.py (API layer)
 │   ├── templates/board.html  # Jinja2 board UI
 │   ├── static/board.js|css
 │   ├── models.py             # SQLAlchemy models
 │   ├── schemas.py            # Pydantic request/response shapes
 │   ├── db.py / main.py
-├── tests/                    # pytest + Hypothesis (46 tests)
+├── tests/                    # pytest + Hypothesis (40 tests)
 ├── eval/                     # Labeled eval set + hallucination stress-test
 ├── requirements.txt
 └── README.md
