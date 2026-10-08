@@ -308,7 +308,7 @@ pytest -v
 
 **40 tests**, covering:
 - 25 unit tests across the four engine modules (cycle/schedule/status/critical_path)
-- 6 Hypothesis property-based tests (500 randomized cases each for cycle detection, 300 each for scheduling/status invariants)
+- 7 Hypothesis property-based tests (500 randomized cases each for cycle detection, 300 each for scheduling/status invariants)
 - 8 tests for the AI response parser (hallucination filtering, malformed JSON handling)
 - Full suite runs in under 10 seconds — no network calls, no database required for the engine tests.
 - `pytest.ini` scopes collection to `tests/` only, so the standalone `eval/` scripts (which make live API calls and need `GROQ_API_KEY` at runtime) are never picked up by `pytest`. They're run manually: `python eval/run_eval.py`, `python eval/hallucination_test.py`.
