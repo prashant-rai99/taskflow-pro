@@ -21,6 +21,10 @@ function board() {
         criticalPathTaskIds: [],
 
         explainData: {},
+        showDepForm: false,
+        depTaskId: null,
+        depTaskTitle: "",
+        depPrereqId: "",
 
         columns: [
             { key: "backlog", label: "Backlog" },
@@ -139,6 +143,40 @@ function board() {
         async rejectSuggestion(suggestionId) {
             await fetch(`/api/tasks/suggestions/${suggestionId}/reject`, { method: "POST" });
             await this.loadSuggestionsFor(this.suggestionsForTaskId);
+        },
+
+        openDependencyForm(taskId) {
+            const t = this.tasks.find(x => x.id === taskId);
+            this.depTaskId = taskId;
+            this.depTaskTitle = t ? t.title : "";
+            this.depPrereqId = "";
+            this.showDepForm = true;
+        },
+
+        availablePrereqs() {
+            return this.tasks.filter(t => t.id !== this.depTaskId);
+        },
+
+        async addDependency() {
+            if (!this.depPrereqId) {
+                alert("Select a prerequisite first.");
+                return;
+            }
+            const res = await fetch("/api/dependencies", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    task_id: this.depTaskId,
+                    prerequisite_id: Number(this.depPrereqId),
+                }),
+            });
+            if (res.ok) {
+                this.showDepForm = false;
+                await this.loadTasks();
+            } else {
+                const err = await res.json();
+                alert("Cannot add dependency: " + (typeof err.detail === "string" ? err.detail : JSON.stringify(err.detail)));
+            }
         },
 
         async explainStatus(taskId) {

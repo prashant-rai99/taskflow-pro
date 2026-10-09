@@ -106,6 +106,24 @@
         </div>
     </div>
 
+    <!-- Add Dependency Modal -->
+    <div x-show="showDepForm" class="modal-backdrop" @click.self="showDepForm = false">
+        <div class="modal">
+            <h3>Add dependency</h3>
+            <p><strong x-text="depTaskTitle"></strong> depends on:</p>
+            <select x-model="depPrereqId">
+                <option value="">Select prerequisite task</option>
+                <template x-for="t in availablePrereqs()" :key="t.id">
+                    <option :value="t.id" x-text="t.title"></option>
+                </template>
+            </select>
+            <div class="modal-actions">
+                <button @click="showDepForm = false">Cancel</button>
+                <button @click="addDependency()">Add</button>
+            </div>
+        </div>
+    </div>
+
     <div class="board">
         <template x-for="col in columns" :key="col.key">
             <div class="column">
@@ -125,6 +143,7 @@
                             <div class="card-actions">
                                 <button @click="suggestDependencies(task.id)" class="card-btn">🔗 Suggest</button>
                                 <button @click="whatIfPreview(task.id)" class="card-btn">🔮 What-if</button>
+                                <button @click="openDependencyForm(task.id)" class="card-btn">⛓ Depends on</button>
                             </div>
                         </div>
                     </template>
@@ -134,7 +153,7 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
-    <script src="/static/board.js"></script>
+    <script src="/static/board.js?v=2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.13.5/cdn.min.js"></script>
 </body>
 
